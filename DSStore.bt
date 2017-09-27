@@ -1,0 +1,120 @@
+//------------------------------------------------
+//--- 010 Editor v7.0.2 Binary Template
+//
+//      File: DSStore.bt
+//   Authors: n0fate
+//   Version: 0.1
+//   Purpose: Parse '.DS_Store' DB files.
+//  Category: DB
+// File Mask: *.DS_Store
+//  ID Bytes: 00 00 00 01 42 75 64 31 // version(1) + Bud1
+//   History: 
+//   1.0   n0fate: Initial release
+//------------------------------------------------
+
+typedef struct {
+    char magic[4];                      // String 'Bud1'
+    DWORD offset<format=hex>;   // offset to the allocator's bookkeeping information
+    DWORD size<format=hex>;     // size of the allocator's bookkepping information
+    DWORD offset2<format=hex>;  // offset for backup
+    DWORD roottree[4]<format=hex>;   // unknown...
+} DSSTOREHEADER;    // 32bytes
+
+typedef struct {
+    DWORD offsetcount;
+    DWORD unknown;
+    DWORD offset[256/*rootblock.offsetcount*/]<format=hex>;
+} ROOTBLOCK;
+
+/* start */
+
+BigEndian();
+
+DWORD version<format=hex>;          // current '1'
+
+DSSTOREHEADER header;
+
+FSeek(header.offset+4);
+
+ROOTBLOCK rootblock;
+
+
+
+DWORD tokencnt;
+
+typedef struct {
+    char len;
+    char name[len]; // DSDB - Desktop Services Database
+    DWORD value;
+} LNV<optimize=true>;
+
+LNV lnv[tokencnt];
+
+// read first dir
+local uint offsetcnt = 0;
+local uint cnt = 0;
+while(offsetcnt != 4) {
+    if(!header.roottree[offsetcnt])
+    {
+        offsetcnt++;
+        continue;
+    }
+    FSeek(0);
+    FSeek(header.roottree[offsetcnt] & 0xFFFFFFF0);
+    
+    typedef struct {
+        DWORD start;
+        DWORD unknown;
+        DWORD count;
+    } RECORDHEADER;
+    
+    RECORDHEADER recordheader;
+    
+     
+    cnt = recordheader.count;
+    
+    typedef struct {
+        if(recordheader.unknown)
+            DWORD unknown;
+        DWORD length;
+        wchar_t name[length];
+        char recordtype[4];
+        char datatype[4];
+        if(Stricmp("long", datatype) == 0)
+        {
+            long value;
+        }
+        else if(Strcmp("bool", datatype) == 0)
+        {
+            byte value <format=hex,comment="boolean value, stored as one byte">;
+        }
+        else if(Strcmp("type", datatype) == 0)
+        {
+            long value <format=hex,comment="FourCharCode, stored as four bytes">;
+        }
+        else if(Strcmp("comp", datatype) == 0)
+        {
+            QWORD value <format=hex,comment="QWORD, just 64bit integer">;
+        }
+        else if(Strcmp("blob", datatype) == 0)
+        {
+            DWORD bloblength;
+            byte blob[bloblength];
+        }
+        else if(Strcmp("dutc", datatype) == 0)
+        {
+    
+            QWORD timestamp <format=hex,comment="QWORD,microsec from 01/01/1904 12:00 AM">;
+    
+        }
+        else
+            byte value[8];
+    } NAME<optimize=true>;
+    
+    while(cnt--) {
+    
+        NAME lnv2;
+        Printf("filename: %s, unknown : %d\n", lnv2.name, recordheader.unknown);
+    }
+    offsetcnt++;
+}
