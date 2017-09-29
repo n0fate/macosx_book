@@ -51,16 +51,21 @@ typedef struct {
 LNV lnv[tokencnt];
 
 // read first dir
-local uint offsetcnt = 0;
+local uint offsetcnt = 2;
 local uint cnt = 0;
-while(offsetcnt != 4) {
-    if(!header.roottree[offsetcnt])
+while(offsetcnt < rootblock.offsetcount) {
+    if(!rootblock.offset[offsetcnt])
+    {
+        offsetcnt++;
+        continue;
+    }
+    if(rootblock.offset[offsetcnt] < 0x1000)
     {
         offsetcnt++;
         continue;
     }
     FSeek(0);
-    FSeek(header.roottree[offsetcnt] & 0xFFFFFFF0);
+    FSeek(rootblock.offset[offsetcnt] & 0xFFFFFFF0);
     
     typedef struct {
         DWORD start;
@@ -103,9 +108,12 @@ while(offsetcnt != 4) {
         }
         else if(Strcmp("dutc", datatype) == 0)
         {
-    
             QWORD timestamp <format=hex,comment="QWORD,microsec from 01/01/1904 12:00 AM">;
-    
+        }
+        else if(Strcmp("ustr", datatype) == 0)
+        {
+            DWORD strlength;
+            wchar_t str[strlength];
         }
         else
             byte value[8];
@@ -114,7 +122,7 @@ while(offsetcnt != 4) {
     while(cnt--) {
     
         NAME lnv2;
-        Printf("filename: %s, unknown : %d\n", lnv2.name, recordheader.unknown);
+        //Printf("filename: %s, recordtype : %s\n", lnv2.name, lnv2.recordtype);
     }
     offsetcnt++;
 }
